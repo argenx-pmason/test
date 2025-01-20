@@ -2,15 +2,17 @@
   "name": "test",
   "version": "0.1.0",
   "private": true,
-  "homepage": "/lsaf/webdav/repo/general/biostat/tools/test",
+  "homepage": "/lsaf/webdav/repo/general/biostat/apps/test",
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/material": "^6.2.0",
+    "buffer": "^6.0.3",
     "cra-template": "1.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-scripts": "5.0.1"
+    "react-scripts": "5.0.1",
+    "xml-js": "^1.6.11"
   },
   "scripts": {
     "start": "react-scripts start",

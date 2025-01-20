@@ -1,45 +1,71 @@
 import { useState } from "react";
-import { TextField } from "@mui/material";
+import { TextField, Box, Button } from "@mui/material";
+import {
+  encryptPassword,
+  logon,
+  submitJob,
+  upload,
+  waitTillJobCompletes,
+  getPathManifest,
+  getManifest,
+  getFileContents,
+  getFileVersions,
+  getChildren,
+} from "./utility";
+import { useEffect } from "react";
 
 function App() {
   // fetch data from API
-  const api = `https://arx-rconnect.argen-x.com/content/66c7e5fa-58a2-4e98-9573-6ec7282f5d2f/proxy/xarprod/lsaf/api`,
+  const { host } = window.location;
+  let realhost;
+  if (host.includes("sharepoint")) {
+    realhost = "xarprod.ondemand.sas.com";
+  } else if (host.includes("localhost")) {
+    realhost = "xartest.ondemand.sas.com";
+  } else {
+    realhost = host;
+  }
+  const api = "https://" + realhost + "/lsaf/api",
     [username, setUsername] = useState(""),
     [password, setPassword] = useState(""),
     [token, setToken] = useState(""),
-    fetchData = async () => {
-      const response = await fetch(
-        `https://arx-rconnect.argen-x.com/content/66c7e5fa-58a2-4e98-9573-6ec7282f5d2f/proxy/xarprod/lsaf/api/repository/files/general/biostat/macros/_library/titles.sas?component=contents`
-      );
-      const data = await response.json();
-      console.log(data);
-    },
-    logon = async () => {
-      const url = api + "/logon",
-        myHeaders = new Headers();
-      myHeaders.append(
-        "Authorization",
-        "Basic " + btoa(username + ":" + password)
-      );
-      const requestOptions = {
-        method: "POST",
-        headers: myHeaders,
-        redirect: "follow",
-      };
+    [encryptedPassword, setEncryptedPassword] = useState(""),
+    [jobResponse, setJobResponse] = useState(null),
+    [uploadStatus, setUploadStatus] = useState(null),
+    [submissionId, setSubmissionId] = useState(null),
+    [manifestPath, setManifestPath] = useState(null),
+    [logPath, setLogPath] = useState(null),
+    [repositoryPath, setRepositoryPath] = useState(null),
+    [progPath, setProgPath] = useState(null),
+    [charParm, setCharParm] = useState(null),
+    [folderParm, setFolderParm] = useState(null),
+    [outputFiles, setOutputFiles] = useState(null),
+    [fileContents, setFileContents] = useState(null),
+    [versions, setVersions] = useState(null),
+    [children, setChildren] = useState(null);
 
-      fetch(url, requestOptions)
-        .then((response) => {
-          const authToken = response.headers.get("x-auth-token");
-          console.log("logon - authToken", authToken, "response", response);
-          setToken(authToken);
-        })
-        .catch((error) => console.error(error));
-    };
+  const fileContent = {
+    test: 1,
+    name: "phil",
+    description: "some test data to upload",
+    date: new Date().toISOString(),
+    x: [1, 2, 3, 4, 5],
+  };
+
+  // get default values from local storage
+  useEffect(() => {
+    const tempUsername = localStorage.getItem("username"),
+      tempEncryptedPassword = localStorage.getItem("encryptedPassword");
+    setUsername(tempUsername);
+    setEncryptedPassword(tempEncryptedPassword);
+  }, []);
 
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Test</h1>
+        <h1>{api}</h1>
+      </header>
+      <Box sx={{ backgroundColor: "#ef9a9a", padding: "10px" }}>
         <TextField
           size="small"
           label="Username"
@@ -57,10 +83,240 @@ function App() {
             setPassword(e.target.value);
           }}
         />
-        <button onClick={logon}>Logon</button>
-        <p />
-        <button onClick={fetchData}>Fetch Data</button>
-      </header>
+        <Button
+          variant="contained"
+          color="success"
+          onClick={() =>
+            encryptPassword(api, username, password, setEncryptedPassword)
+          }
+        >
+          Encrypt Password if you havent already or if you changed the password
+        </Button>
+        {encryptedPassword && <p>{encryptedPassword}</p>}
+      </Box>
+      <Box sx={{ backgroundColor: "#f48fb1", padding: "10px" }}>
+        <Button
+          variant="contained"
+          color="success"
+          onClick={() => logon(api, username, encryptedPassword, setToken)}
+        >
+          Logon with encrypted password & get token
+        </Button>
+        {token && <p>{token}</p>}
+      </Box>
+      <Box sx={{ backgroundColor: "#ce93d8", padding: "10px" }}>
+        <Button
+          variant="contained"
+          onClick={async () => {
+            const response = await submitJob(
+              api,
+              "/general/biostat/jobs/utils/dev/jobs/folder_access_request.job",
+              token
+            );
+            console.log("response from submitJob: ", response);
+            setJobResponse(response);
+            setSubmissionId(response.submissionId);
+          }}
+        >
+          Submit job
+        </Button>
+        {jobResponse && jobResponse.status && (
+          <p>
+            <b>Status: </b>
+            {jobResponse.status}
+          </p>
+        )}
+        {submissionId && (
+          <p>
+            <b>submissionId: </b>
+            {submissionId}
+          </p>
+        )}
+      </Box>
+      <Box sx={{ backgroundColor: "#b39ddb", padding: "10px" }}>
+        <Button
+          variant="contained"
+          onClick={async () => {
+            const response = await waitTillJobCompletes(
+              api,
+              submissionId,
+              token
+            );
+            console.log("response from waitTillJobCompletes: ", response);
+            setJobResponse(response);
+          }}
+        >
+          Wait till job completes
+        </Button>
+        {jobResponse && jobResponse.timeTaken && (
+          <p>
+            <b>timeTaken: </b>
+            {jobResponse.timeTaken}
+          </p>
+        )}
+      </Box>
+      <Box sx={{ backgroundColor: "#9fa8da", padding: "10px" }}>
+        <Button
+          variant="contained"
+          onClick={async () => {
+            const response = await getPathManifest(api, submissionId, token);
+            console.log("response from getPathManifest: ", response);
+            setManifestPath(response);
+          }}
+        >
+          Get path manifest
+        </Button>
+        {manifestPath && (
+          <p>
+            <b>manifestPath: </b>
+            {manifestPath}
+          </p>
+        )}
+      </Box>
+      <Box sx={{ backgroundColor: "#90caf9", padding: "10px" }}>
+        <Button
+          variant="contained"
+          onClick={async () => {
+            const response = await getManifest(api, token, manifestPath);
+            console.log("response from getManifest: ", response);
+            setLogPath(response.log_path);
+            setRepositoryPath(response.repository_path);
+            setProgPath(response.prog_path);
+            setCharParm(response.char_parm);
+            setFolderParm(response.folder_parm);
+            setOutputFiles(response.output_files.map((o) => "🟢" + o));
+          }}
+        >
+          Get manifest
+        </Button>
+        {logPath && (
+          <Box>
+            <p>
+              <b>logPath: </b>
+              {logPath}
+            </p>
+            <p>
+              <b>repositoryPath: </b>
+              {repositoryPath}
+            </p>
+            <p>
+              <b>progPath: </b>
+              {progPath}
+            </p>
+            <p>
+              <b>charParm: </b>
+              {charParm}
+            </p>
+            <p>
+              <b>folderParm: </b>
+              {folderParm}
+            </p>
+            <p>
+              <b>outputFiles: </b>
+              {outputFiles}
+            </p>
+          </Box>
+        )}
+      </Box>
+      <Box sx={{ backgroundColor: "#81d4fa", padding: "10px" }}>
+        <Button
+          variant="contained"
+          color="warning"
+          onClick={async () => {
+            const response = await upload(
+              api,
+              "/general/biostat/apps/test/test.json",
+              fileContent,
+              token
+            );
+            console.log("response from upload: ", response);
+            setUploadStatus(response);
+          }}
+        >
+          Upload a file
+        </Button>
+        {uploadStatus && (
+          <p>
+            <b>status: </b>
+            {uploadStatus}
+          </p>
+        )}
+      </Box>
+      <Box sx={{ backgroundColor: "#80deea", padding: "10px" }}>
+        <Button
+          variant="contained"
+          color="warning"
+          onClick={async () => {
+            const response = await getFileContents(
+              api,
+              token,
+              "/general/biostat/apps/test/test.json"
+            );
+            console.log("response from getFileContents: ", response);
+            setFileContents(response);
+          }}
+        >
+          Get the contents of a file
+        </Button>
+        {fileContents && (
+          <p>
+            <b>fileContents: </b>
+            {fileContents.toString()}
+          </p>
+        )}
+      </Box>
+      <Box sx={{ backgroundColor: "#80cbc4", padding: "10px" }}>
+        <Button
+          variant="contained"
+          color="warning"
+          onClick={async () => {
+            const response = await getFileVersions(
+                api,
+                token,
+                "/general/biostat/macros/_library/filecheckwithrules.sas"
+              ),
+              text = response.items.map(
+                (i) =>
+                  "🟠" + i.version + " - " + i.createdBy + " - " + i?.comment
+              );
+            console.log("response from getVersions: ", response);
+            setVersions(text);
+          }}
+        >
+          Get the versions of a file
+        </Button>
+        {versions && (
+          <p>
+            <b>versions: </b>
+            {versions}
+          </p>
+        )}
+      </Box>
+      <Box sx={{ backgroundColor: "#a5d6a7", padding: "10px" }}>
+        <Button
+          variant="contained"
+          color="warning"
+          onClick={async () => {
+            const response = await getChildren(
+                api,
+                token,
+                "/general/biostat/apps"
+              ),
+              text = response.items.map((i) => "🟡" + i?.path);
+            console.log("response from getChildren: ", response);
+            setChildren(text);
+          }}
+        >
+          Get children for a path
+        </Button>
+        {children && (
+          <p>
+            <b>children: </b>
+            {children}
+          </p>
+        )}
+      </Box>
+      #c5e1a5,#e6ee9c,#fff59d,#ffe082,#ffcc80,#ffab91,#bcaaa4,#eeeeee
     </div>
   );
 }

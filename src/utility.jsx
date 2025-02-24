@@ -379,6 +379,78 @@ export const getChildren = async (api, token, path) => {
       return error;
     });
 };
+export const checkout = async (api, token, path) => {
+  const apiRequest = `/repository/files/${path}?action=checkout`,
+    myHeaders = new Headers();
+  myHeaders.append("X-Auth-Token", token);
+  const requestOptions = {
+    method: "PUT",
+    headers: myHeaders,
+    redirect: "follow",
+  };
+  return fetch(api + apiRequest, requestOptions)
+    .then((response) => {
+      console.log("checkout - response", response);
+      return response.text();
+    })
+    .then((responseText) => {
+      const parsed=JSON.parse(responseText)
+      console.log("checkout - responseText", parsed);
+      return parsed;
+    })
+    .catch((error) => {
+      console.error(error);
+      return error;
+    });
+};
+export const checkin = async (api, token, path) => {
+  const apiRequest = `/repository/files/${path}?action=checkin`,
+    myHeaders = new Headers();
+  myHeaders.append("X-Auth-Token", token);
+  const requestOptions = {
+    method: "PUT",
+    headers: myHeaders,
+    redirect: "follow",
+  };
+  return fetch(api + apiRequest, requestOptions)
+    .then((response) => {
+      console.log("checkin - response", response);
+      return response.text();
+    })
+    .then((responseText) => {
+      const parsed=JSON.parse(responseText)
+      console.log("checkin - responseText", parsed);
+      return parsed;
+    })
+    .catch((error) => {
+      console.error(error);
+      return error;
+    });
+};
+export const undocheckout = async (api, token, path) => {
+  const apiRequest = `/repository/files/${path}?action=undocheckout`,
+    myHeaders = new Headers();
+  myHeaders.append("X-Auth-Token", token);
+  const requestOptions = {
+    method: "PUT",
+    headers: myHeaders,
+    redirect: "follow",
+  };
+  return fetch(api + apiRequest, requestOptions)
+    .then((response) => {
+      console.log("undocheckout - response", response);
+      return response.text();
+    })
+    .then((responseText) => {
+      const parsed=JSON.parse(responseText)
+      console.log("undocheckout - responseText", parsed);
+      return parsed;
+    })
+    .catch((error) => {
+      console.error(error);
+      return error;
+    });
+};
 
 export const sleep = (t) => new Promise((r) => setTimeout(r, t));
 

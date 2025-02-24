@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TextField, Box, Button } from "@mui/material";
 import {
   encryptPassword,
@@ -11,8 +11,10 @@ import {
   getFileContents,
   getFileVersions,
   getChildren,
-} from "./utility";
-import { useEffect } from "react";
+  checkout,
+  checkin,
+  undocheckout,
+} from "../../utility";
 
 function App() {
   // fetch data from API
@@ -42,7 +44,11 @@ function App() {
     [outputFiles, setOutputFiles] = useState(null),
     [fileContents, setFileContents] = useState(null),
     [versions, setVersions] = useState(null),
-    [children, setChildren] = useState(null);
+    [children, setChildren] = useState(null),
+    [jobs, setJobs] = useState(null),
+    [checkoutValue, setCheckoutValue] = useState(null),
+    [checkinValue, setCheckinValue] = useState(null),
+    [undocheckoutValue, setUndocheckoutValue] = useState(null);
 
   const fileContent = {
     test: 1,
@@ -184,7 +190,7 @@ function App() {
             setProgPath(response.prog_path);
             setCharParm(response.char_parm);
             setFolderParm(response.folder_parm);
-            setOutputFiles(response.output_files.map((o) => "🟢" + o));
+            setOutputFiles(response.output_files.map((o) => "🔴" + o));
           }}
         >
           Get manifest
@@ -277,7 +283,7 @@ function App() {
               ),
               text = response.items.map(
                 (i) =>
-                  "🟠" + i.version + " - " + i.createdBy + " - " + i?.comment
+                  "🟧" + i.version + " - " + i.createdBy + " - " + i?.comment
               );
             console.log("response from getVersions: ", response);
             setVersions(text);
@@ -316,7 +322,102 @@ function App() {
           </p>
         )}
       </Box>
-      #c5e1a5,#e6ee9c,#fff59d,#ffe082,#ffcc80,#ffab91,#bcaaa4,#eeeeee
+      <Box sx={{ backgroundColor: "#c5e1a5", padding: "10px" }}>
+        <Button
+          variant="contained"
+          color="warning"
+          onClick={async () => {
+            const response = await getChildren(
+                api,
+                token,
+                "/general/biostat/jobs/utils/dev/jobs"
+              ),
+              text = response.items
+                .filter((i) => i?.path.endsWith(".job"))
+                .map((i) => "🟩" + i?.path);
+            console.log("jobs found from getChildren: ", response);
+            setJobs(text);
+          }}
+        >
+          Get jobs for a path
+        </Button>
+        {jobs && (
+          <p>
+            <b>jobs: </b>
+            {jobs}
+          </p>
+        )}
+      </Box>
+      <Box sx={{ backgroundColor: "#e6ee9c", padding: "10px" }}>
+        <Button
+          variant="contained"
+          color="warning"
+          onClick={async () => {
+            const response = await checkout(
+              api,
+              token,
+              "/general/biostat/jobs/utils/dev/jobs/backups.job"
+            );
+            console.log("checkout: ", response);
+            setCheckoutValue(response?.status?.type);
+          }}
+        >
+          Checkout backups.job
+        </Button>
+        {checkoutValue && (
+          <p>
+            <b>checkout: </b>
+            {checkoutValue}
+          </p>
+        )}
+      </Box>
+      <Box sx={{ backgroundColor: "#fff59d", padding: "10px" }}>
+        <Button
+          variant="contained"
+          color="warning"
+          onClick={async () => {
+            const response = await checkin(
+              api,
+              token,
+              "/general/biostat/jobs/utils/dev/jobs/backups.job"
+            );
+            console.log("checkin: ", response);
+            setCheckinValue(response?.status?.type);
+          }}
+        >
+          Checkin backups.job
+        </Button>
+        {checkinValue && (
+          <p>
+            <b>checkin: </b>
+            {checkinValue}
+          </p>
+        )}
+      </Box>
+      <Box sx={{ backgroundColor: "#ffe082", padding: "10px" }}>
+        <Button
+          variant="contained"
+          color="warning"
+          onClick={async () => {
+            const response = await undocheckout(
+              api,
+              token,
+              "/general/biostat/jobs/utils/dev/jobs/backups.job"
+            );
+            console.log("undocheckout: ", response);
+            setUndocheckoutValue(response?.status?.type);
+          }}
+        >
+          Undo checkout backups.job
+        </Button>
+        {undocheckoutValue && (
+          <p>
+            <b>undocheckout: </b>
+            {undocheckoutValue}
+          </p>
+        )}
+      </Box>
+      {/*🟪🟤⬛⚪ ,#,#,#ffcc80,#ffab91,#bcaaa4,#eeeeee */}
     </div>
   );
 }
